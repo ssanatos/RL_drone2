@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#070b16">
+  <title>3D Drone AI Lab</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+  </script>
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">✦</span><div><b>DRONE AI LAB</b><small>NEUROEVOLUTION SIMULATOR</small></div></div>
+      <div class="top-status"><span class="live-dot"></span><span id="runStatus">SIMULATION READY</span><span class="version">v1.0</span></div>
+    </header>
+    <main class="layout">
+      <section class="viewport-panel">
+        <div id="viewport">
+          <div class="viewport-label"><span class="label-dot"></span> SQUARE TUNNEL · NEON CIRCUIT</div>
+          <div class="hud-top"><span>GEN <b id="hudGen">1</b></span><span>DRONES <b id="hudAlive">80</b></span><span>SIM <b id="hudSpeed">1.0×</b></span></div>
+          <div id="loading">INITIALIZING 3D SIMULATION…</div>
+          <div class="crosshair">+</div>
+          <div class="viewport-bottom"><span id="cameraLabel">CHASE CAMERA · BEST DRONE</span><span id="lapLabel">PROGRESS 0.0%</span></div>
+        </div>
+        <div class="controls-row">
+          <button id="startBtn" class="primary">▶ Start evolution</button>
+          <button id="pauseBtn">Ⅱ Pause</button>
+          <button id="resetBtn">↺ Reset</button>
+          <div class="control-group"><label for="speed">SIM SPEED</label><input id="speed" type="range" min="0.5" max="4" step="0.5" value="1"><b id="speedVal">1.0×</b></div>
+          <div class="control-group"><label for="population">POPULATION</label><select id="population"><option>40</option><option selected>80</option><option>120</option><option>160</option></select></div>
+        </div>
+      </section>
+      <aside class="sidebar">
+        <div class="section-heading"><span>FLIGHT TELEMETRY</span><span class="pill">LIVE</span></div>
+        <div class="metric-grid">
+          <div class="metric"><small>GENERATION</small><strong id="generation">1</strong><em>evolution cycle</em></div>
+          <div class="metric"><small>ACTIVE DRONES</small><strong id="alive">80</strong><em>in current generation</em></div>
+          <div class="metric"><small>BEST DISTANCE</small><strong id="distance">0.0<span>m</span></strong><em>furthest progress</em></div>
+          <div class="metric"><small>BEST SPEED</small><strong id="bestSpeed">0.0<span>m/s</span></strong><em>current record</em></div>
+        </div>
+        <div class="section-heading section-spaced"><span>CHAMPION</span><span class="pill cyan">TOP GENOME</span></div>
+        <div class="champion-card">
+          <div class="champion-icon">✧</div><div><b id="champName">Awaiting flight data</b><small id="champDetail">Start evolution to train</small></div>
+          <div class="champion-score"><strong id="champFitness">—</strong><small>FITNESS</small></div>
+        </div>
+        <div class="section-heading section-spaced"><span>EVOLUTION HISTORY</span><span class="muted">BEST FITNESS</span></div>
+        <div class="chart-wrap"><canvas id="fitnessChart" width="520" height="150"></canvas><div class="chart-axis"><span>OLDER</span><span>GENERATIONS →</span></div></div>
+        <div class="section-heading section-spaced"><span>FLIGHT MODE</span></div>
+        <div class="mode-switch"><button id="aiMode" class="selected">AI AUTO</button><button id="manualMode">MANUAL PILOT</button></div>
+        <div class="manual-help" id="manualHelp">Manual: ← / → roll · ↑ / ↓ pitch · W / S throttle · A / D yaw</div>
+        <div class="section-heading section-spaced"><span>CAMERA</span></div>
+        <div class="mode-switch"><button class="selected" id="chaseBtn">CHASE</button><button id="cockpitBtn">FPV</button></div>
+        <div class="footer-note">Runs locally in your browser · Three.js + Genetic Algorithm</div>
+      </aside>
+    </main>
+  </div>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
