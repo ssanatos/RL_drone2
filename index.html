@@ -1,20 +1,42 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#070b16">
   <title>3D Drone AI Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="./style.css">
   <script type="importmap">
     {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+  </script>
+  <!-- 모듈이 실행조차 못 했을 때(file:// 로 열기, CDN 차단, 스크립트 오류) 로딩 화면에 원인을 표시 -->
+  <script>
+    window.__showError = function (msg) {
+      var el = document.getElementById('loading');
+      if (!el) return;
+      el.className = 'error'; el.style.opacity = '1'; el.textContent = '⚠ ' + msg;
+    };
+    window.addEventListener('error', function (e) { window.__showError('스크립트 오류: ' + (e.message || e.error) + (e.filename ? '\n' + e.filename + ':' + e.lineno : '')); });
+    window.addEventListener('unhandledrejection', function (e) { window.__showError('오류: ' + (e.reason && e.reason.message || e.reason)); });
+    document.addEventListener('DOMContentLoaded', function () {
+      if (location.protocol === 'file:') {
+        window.__showError('file:// 로 열면 ES 모듈이 브라우저에서 차단됩니다.\n폴더에서 `python -m http.server 8000` 실행 후 http://localhost:8000 으로 접속하거나 GitHub Pages 에 올려서 여는 방법을 쓰세요.');
+        return;
+      }
+      setTimeout(function () {
+        if (!window.__droneReady) window.__showError('시뮬레이션이 시작되지 않았습니다.\n· Three.js(cdn.jsdelivr.net) 로드가 차단/지연되었거나\n· 브라우저 콘솔(F12)에 오류가 있을 수 있습니다.\n잠시 후에도 이 화면이면 새로고침(Ctrl+F5) 해 주세요.');
+      }, 8000);
+    });
   </script>
 </head>
 <body>
   <div id="app">
     <header class="topbar">
       <div class="brand"><span class="brand-mark">✦</span><div><b>DRONE AI LAB</b><small>NEUROEVOLUTION SIMULATOR</small></div></div>
-      <div class="top-status"><span class="live-dot"></span><span id="runStatus">SIMULATION READY</span><span class="version">v1.0</span></div>
+      <div class="top-status"><span class="live-dot"></span><span id="runStatus">SIMULATION READY</span><span class="version">v2.0</span></div>
     </header>
     <main class="layout">
       <section class="viewport-panel">
@@ -23,13 +45,16 @@
           <div class="hud-top"><span>GEN <b id="hudGen">1</b></span><span>DRONES <b id="hudAlive">80</b></span><span>SIM <b id="hudSpeed">1.0×</b></span></div>
           <div id="loading">INITIALIZING 3D SIMULATION…</div>
           <div class="crosshair">+</div>
-          <div class="viewport-bottom"><span id="cameraLabel">CHASE CAMERA · BEST DRONE</span><span id="lapLabel">PROGRESS 0.0%</span></div>
+          <div class="viewport-bottom"><span id="cameraLabel">CHASE CAMERA</span><span id="lapLabel">PROGRESS 0.0%</span></div>
         </div>
         <div class="controls-row">
           <button id="startBtn" class="primary">▶ Start evolution</button>
           <button id="pauseBtn">Ⅱ Pause</button>
           <button id="resetBtn">↺ Reset</button>
-          <div class="control-group"><label for="speed">SIM SPEED</label><input id="speed" type="range" min="0.5" max="4" step="0.5" value="1"><b id="speedVal">1.0×</b></div>
+          <button id="saveBtn" class="ghost" title="최고 개체를 JSON 으로 저장">💾 Save best</button>
+          <button id="loadBtn" class="ghost" title="저장한 JSON 에서 이어서 학습/재생">📂 Load</button>
+          <input id="loadFile" type="file" accept=".json,application/json" hidden>
+          <div class="control-group"><label for="speed">SIM SPEED</label><input id="speed" type="range" min="0.5" max="32" step="0.5" value="1"><b id="speedVal">1.0×</b></div>
           <div class="control-group"><label for="population">POPULATION</label><select id="population"><option>40</option><option selected>80</option><option>120</option><option>160</option></select></div>
         </div>
       </section>
@@ -46,11 +71,11 @@
           <div class="champion-icon">✧</div><div><b id="champName">Awaiting flight data</b><small id="champDetail">Start evolution to train</small></div>
           <div class="champion-score"><strong id="champFitness">—</strong><small>FITNESS</small></div>
         </div>
-        <div class="section-heading section-spaced"><span>EVOLUTION HISTORY</span><span class="muted">BEST FITNESS</span></div>
+        <div class="section-heading section-spaced"><span>EVOLUTION HISTORY</span><span class="muted">BEST / MEAN FITNESS</span></div>
         <div class="chart-wrap"><canvas id="fitnessChart" width="520" height="150"></canvas><div class="chart-axis"><span>OLDER</span><span>GENERATIONS →</span></div></div>
         <div class="section-heading section-spaced"><span>FLIGHT MODE</span></div>
-        <div class="mode-switch"><button id="aiMode" class="selected">AI AUTO</button><button id="manualMode">MANUAL PILOT</button></div>
-        <div class="manual-help" id="manualHelp">Manual: ← / → roll · ↑ / ↓ pitch · W / S throttle · A / D yaw</div>
+        <div class="mode-switch"><button id="aiMode" class="selected">AI AUTO</button><button id="championMode">CHAMPION</button><button id="manualMode">MANUAL</button></div>
+        <div class="manual-help" id="manualHelp">AI Auto: 신경망이 개체군 전체를 조종하며 세대마다 진화합니다.</div>
         <div class="section-heading section-spaced"><span>CAMERA</span></div>
         <div class="mode-switch"><button class="selected" id="chaseBtn">CHASE</button><button id="cockpitBtn">FPV</button></div>
         <div class="footer-note">Runs locally in your browser · Three.js + Genetic Algorithm</div>
